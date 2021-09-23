@@ -34,7 +34,10 @@ dependencies:
   hive: ^2.0.4
   path_provider: ^2.0.2
   hive_flutter: ^1.1.0
-  flutter_colorpicker: ^0.4.0
+  flutter_colorpicker: ^0.6.0
+  flutter_sound: ^8.3.12
+  permission_handler: ^8.1.6
+  blinking_text: ^1.0.1+2
 
 dev_dependencies:
   flutter_test:

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/Core/FoldersManagement/FolderView.dart';
-import 'package:flutter_app/Core/Home/Home.dart';
+import 'package:flutter_app/Core/Home/Searchbox.dart';
 import 'package:flutter_app/Designs/Colors.dart';
 import 'package:flutter_app/Designs/Fonts.dart';
 import 'package:flutter_app/Suppliments/Dismissable.dart';
 import 'package:flutter_app/Suppliments/FolderSupport.dart';
 
 class Archived extends StatefulWidget {
-  FolderSupport ?archived;
-  Archived({this.archived,Key? key}) : super(key: key);
+  FolderSupport? archived;
+  Archived({this.archived, Key? key}) : super(key: key);
 
   @override
   _ArchivedState createState() => _ArchivedState();
@@ -19,12 +19,21 @@ class _ArchivedState extends State<Archived> {
   Widget build(BuildContext context) {
     void archive(index) {
       setState(() {
-        wisdom!.returnFolderByName(widget.archived!.notes[index].originFolder).add(widget.archived!.notes[index]);
-        widget.archived!.notes.removeAt(index);
+        if (widget.archived!.notes[index].colortagIndex != -1 && widget.archived!.notes[index].colorName != 'None') {
+          var a = colortags.returnTagByName(widget.archived!.notes[index].colorName);
+          widget.archived!.notes[index].colortagIndex = a.notes.length;
+          widget.archived!.notes[index].index = wisdom!.returnFolderByName(widget.archived!.notes[index].originFolder).notes.length;
+          widget.archived!.notes[index].noteEditor.index = wisdom!.returnFolderByName(widget.archived!.notes[index].originFolder).notes.length;
+          a.notes.add(widget.archived!.notes[index]);
+          wisdom!.returnFolderByName(widget.archived!.notes[index].originFolder).add(widget.archived!.notes[index]);
+          widget.archived!.notes.removeAt(index);
+        } else {
+          widget.archived!.notes[index].index = wisdom!.returnFolderByName(widget.archived!.notes[index].originFolder).notes.length;
+          widget.archived!.notes[index].noteEditor.index = wisdom!.returnFolderByName(widget.archived!.notes[index].originFolder).notes.length;
+          wisdom!.returnFolderByName(widget.archived!.notes[index].originFolder).add(widget.archived!.notes[index]);
+          widget.archived!.notes.removeAt(index);
+        }
       });
-      Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) =>
-              Folders()), (Route<dynamic> route) => false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: const Duration(milliseconds: 350),
           backgroundColor: Colors.orange,
@@ -61,7 +70,7 @@ class _ArchivedState extends State<Archived> {
           style: poppins(dark3, h4, FontWeight.w600),
         ),
       ),
-      body: ( widget.archived!.notes.length == 0)
+      body: (widget.archived!.notes.length == 0)
           ? Center(
               child: Text(
                 "No notes are archived at this moment.",
@@ -69,62 +78,20 @@ class _ArchivedState extends State<Archived> {
               ),
             )
           : ListView.builder(
-              physics: BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics()),
-              itemCount:  widget.archived!.notes.length,
+              physics: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              itemCount: widget.archived!.notes.length,
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return Column(
                     children: [
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 600),
-                        child: Container(
-                          margin: EdgeInsets.only(left:20,right:20,top: 5,bottom: 10),
-                          height: 40,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                                color: foreground.withOpacity(0.25),
-                                width: 0.4),
-                            borderRadius: BorderRadius.circular(5),
-                            color: light,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.25),
-                                spreadRadius: 2,
-                                blurRadius: 4,
-                                offset:
-                                    Offset(0, 3), // changes position of shadow
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            style: poppins(foreground.withOpacity(0.7), h2 - 4,
-                                FontWeight.w500),
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: dark2,
-                              ),
-                              hintText: "Search for any keyword you remember.",
-                              hintStyle: poppins(foreground.withOpacity(0.5),
-                                  h4, FontWeight.w500),
-                            ),
-                          ),
-                        ),
-                      ),
+                      SearchBar(),
                       DismissibleWidget2(
-                          item:  widget.archived!.notes[index],
+                          item: widget.archived!.notes[index],
                           child: Container(
-                            margin: EdgeInsets.only(left:20,right:20,top: 5,bottom: 10),
+                            margin: EdgeInsets.only(left: 20, right: 20, top: 5, bottom: 10),
                             child: InkWell(
                                 onTap: () {
-                                  if (widget
-                                      .archived!.notes[index].isPasswordProtected) {
+                                  if (widget.archived!.notes[index].isPasswordProtected) {
                                     late String password = "";
                                     showDialog(
                                       context: context,
@@ -134,73 +101,40 @@ class _ArchivedState extends State<Archived> {
                                         return AlertDialog(
                                           title: Text(
                                             'Enter your password',
-                                            style: poppins(
-                                                foreground.withOpacity(0.75),
-                                                h3,
-                                                FontWeight.w600),
+                                            style: poppins(foreground.withOpacity(0.75), h3, FontWeight.w600),
                                           ),
                                           content: new Row(
                                             children: [
                                               new Expanded(
                                                   child: TextField(
-                                                    autofocus: true,
-                                                    style: poppins(foreground, h2,
-                                                        FontWeight.w500),
-                                                    decoration: InputDecoration(
-                                                        hintStyle: poppins(dark2,
-                                                            h4, FontWeight.w500),
-                                                        hintText:
-                                                        'Password'),
-                                                    onChanged: (value) {
-                                                      password = value;
-                                                    },
-                                                  ))
+                                                autofocus: true,
+                                                style: poppins(foreground, h2, FontWeight.w500),
+                                                decoration: InputDecoration(hintStyle: poppins(dark2, h4, FontWeight.w500), hintText: 'Password'),
+                                                onChanged: (value) {
+                                                  password = value;
+                                                },
+                                              ))
                                             ],
                                           ),
                                           actions: [
                                             Row(
-                                              mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                                              mainAxisAlignment: MainAxisAlignment.center,
                                               children: [
                                                 Expanded(
                                                   child: InkWell(
                                                     onTap: () {
-                                                      if (password ==
-                                                          widget.archived!
-                                                              .notes[index]
-                                                              .getPassword()) {
-                                                        Navigator.push(
-                                                            context,
-                                                            MaterialPageRoute(
-                                                                builder: (context) => widget
-                                                                    .archived!
-                                                                    .notes[
-                                                                index]
-                                                                    .noteEditor
-                                                                    .notes()));
+                                                      if (password == widget.archived!.notes[index].getPassword()) {
+                                                        Navigator.push(context, MaterialPageRoute(builder: (context) => widget.archived!.notes[index].noteEditor.notes()));
                                                       }
                                                     },
                                                     child: Container(
-                                                        margin:
-                                                        EdgeInsets.all(10),
-                                                        decoration: BoxDecoration(
-                                                            color: dark1,
-                                                            borderRadius:
-                                                            BorderRadius
-                                                                .circular(
-                                                                5)),
-                                                        padding:
-                                                        EdgeInsets.all(5),
+                                                        margin: EdgeInsets.all(10),
+                                                        decoration: BoxDecoration(color: dark1, borderRadius: BorderRadius.circular(5)),
+                                                        padding: EdgeInsets.all(5),
                                                         child: Center(
                                                           child: Text(
                                                             "Ok",
-                                                            style: poppins(
-                                                                foreground
-                                                                    .withOpacity(
-                                                                    0.75),
-                                                                h3,
-                                                                FontWeight
-                                                                    .w600),
+                                                            style: poppins(foreground.withOpacity(0.75), h3, FontWeight.w600),
                                                           ),
                                                         )),
                                                   ),
@@ -211,18 +145,11 @@ class _ArchivedState extends State<Archived> {
                                         );
                                       },
                                     );
-                                  }else{
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => widget
-                                                .archived!.notes[index].noteEditor
-                                                .notes()));
+                                  } else {
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => widget.archived!.notes[index].noteEditor.notes()));
                                   }
-
-
                                 },
-                                child:  widget.archived!.notes[index].noteContainer()),
+                                child: widget.archived!.notes[index].noteContainer(self: widget.archived, index: index)),
                           ),
                           onDismissed: (direction) {
                             switch (direction) {
@@ -256,13 +183,12 @@ class _ArchivedState extends State<Archived> {
                 return Align(
                   alignment: Alignment.center,
                   child: DismissibleWidget2(
-                      item:  widget.archived!.notes[index],
+                      item: widget.archived!.notes[index],
                       child: Container(
-                        margin: EdgeInsets.only(left:20,right:20,top: 5,bottom: 10),
+                        margin: EdgeInsets.only(left: 20, right: 20, top: 5, bottom: 10),
                         child: InkWell(
                           onTap: () {
-                            if (widget
-                                .archived!.notes[index].isPasswordProtected) {
+                            if (widget.archived!.notes[index].isPasswordProtected) {
                               late String password = "";
                               showDialog(
                                 context: context,
@@ -272,73 +198,40 @@ class _ArchivedState extends State<Archived> {
                                   return AlertDialog(
                                     title: Text(
                                       'Enter your password',
-                                      style: poppins(
-                                          foreground.withOpacity(0.75),
-                                          h3,
-                                          FontWeight.w600),
+                                      style: poppins(foreground.withOpacity(0.75), h3, FontWeight.w600),
                                     ),
                                     content: new Row(
                                       children: [
                                         new Expanded(
                                             child: TextField(
-                                              autofocus: true,
-                                              style: poppins(foreground, h2,
-                                                  FontWeight.w500),
-                                              decoration: InputDecoration(
-                                                  hintStyle: poppins(dark2,
-                                                      h4, FontWeight.w500),
-                                                  hintText:
-                                                  'Password'),
-                                              onChanged: (value) {
-                                                password = value;
-                                              },
-                                            ))
+                                          autofocus: true,
+                                          style: poppins(foreground, h2, FontWeight.w500),
+                                          decoration: InputDecoration(hintStyle: poppins(dark2, h4, FontWeight.w500), hintText: 'Password'),
+                                          onChanged: (value) {
+                                            password = value;
+                                          },
+                                        ))
                                       ],
                                     ),
                                     actions: [
                                       Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                        mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
                                           Expanded(
                                             child: InkWell(
                                               onTap: () {
-                                                if (password ==
-                                                    widget.archived!
-                                                        .notes[index]
-                                                        .getPassword()) {
-                                                  Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                          builder: (context) => widget
-                                                              .archived!
-                                                              .notes[
-                                                          index]
-                                                              .noteEditor
-                                                              .notes()));
+                                                if (password == widget.archived!.notes[index].getPassword()) {
+                                                  Navigator.push(context, MaterialPageRoute(builder: (context) => widget.archived!.notes[index].noteEditor.notes()));
                                                 }
                                               },
                                               child: Container(
-                                                  margin:
-                                                  EdgeInsets.all(10),
-                                                  decoration: BoxDecoration(
-                                                      color: dark1,
-                                                      borderRadius:
-                                                      BorderRadius
-                                                          .circular(
-                                                          5)),
-                                                  padding:
-                                                  EdgeInsets.all(5),
+                                                  margin: EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(color: dark1, borderRadius: BorderRadius.circular(5)),
+                                                  padding: EdgeInsets.all(5),
                                                   child: Center(
                                                     child: Text(
                                                       "Ok",
-                                                      style: poppins(
-                                                          foreground
-                                                              .withOpacity(
-                                                              0.75),
-                                                          h3,
-                                                          FontWeight
-                                                              .w600),
+                                                      style: poppins(foreground.withOpacity(0.75), h3, FontWeight.w600),
                                                     ),
                                                   )),
                                             ),
@@ -349,17 +242,11 @@ class _ArchivedState extends State<Archived> {
                                   );
                                 },
                               );
-                            }else{
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => widget
-                                          .archived!.notes[index].noteEditor
-                                          .notes()));
+                            } else {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => widget.archived!.notes[index].noteEditor.notes()));
                             }
-
                           },
-                          child:  widget.archived!.notes[index].noteContainer(),
+                          child: widget.archived!.notes[index].noteContainer(self: widget.archived, index: index),
                         ),
                       ),
                       onDismissed: (direction) {

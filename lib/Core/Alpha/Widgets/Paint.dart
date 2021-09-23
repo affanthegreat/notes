@@ -1,7 +1,4 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_app/Core/FoldersManagement/FolderView.dart';
 import 'package:flutter_app/Core/Home/Home.dart';
 import 'package:flutter_app/Designs/Colors.dart';
 import 'package:flutter_app/Designs/Fonts.dart';
@@ -9,16 +6,18 @@ import 'package:flutter_app/Suppliments/FolderSupport.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:painter/painter.dart';
 
-class ExamplePage extends StatefulWidget {
-  int ?index;
-  FolderSupport ?self;
-  ExamplePage({this.self,this.index});
+import 'Paintview..dart';
+
+class PaintScreen extends StatefulWidget {
+  int? index;
+  FolderSupport? self;
+  PaintScreen({this.self, this.index});
 
   @override
-  _ExamplePageState createState() => new _ExamplePageState();
+  _PaintScreenState createState() => new _PaintScreenState();
 }
 
-class _ExamplePageState extends State<ExamplePage> {
+class _PaintScreenState extends State<PaintScreen> {
   bool _finished = false;
   PainterController _controller = _newController();
 
@@ -31,6 +30,7 @@ class _ExamplePageState extends State<ExamplePage> {
     PainterController controller = new PainterController();
     controller.thickness = 1.0;
     controller.backgroundColor = light;
+    controller.drawColor = foreground;
     return controller;
   }
 
@@ -68,13 +68,8 @@ class _ExamplePageState extends State<ExamplePage> {
                 _controller.undo();
               }
             }),
-        new IconButton(
-            icon: new Icon(Icons.delete),
-            tooltip: 'Clear',
-            onPressed: _controller.clear),
-        new IconButton(
-            icon: new Icon(Icons.check),
-            onPressed: () => _show(_controller.finish(), context)),
+        new IconButton(icon: new Icon(Icons.delete), tooltip: 'Clear', onPressed: _controller.clear),
+        new IconButton(icon: new Icon(Icons.check), onPressed: () => _show(_controller.finish(), context)),
       ];
     }
     return new Scaffold(
@@ -94,180 +89,111 @@ class _ExamplePageState extends State<ExamplePage> {
             child: new DrawBar(_controller),
             preferredSize: new Size(MediaQuery.of(context).size.width, 30.0),
           )),
-      body: Container(
-          margin: EdgeInsets.all(10),
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: dark1,width: 1)
-          ),
-          height: MediaQuery.of(context).size.height * 0.65,
-          child: Container(
-              padding: EdgeInsets.all(10),
-              child: Painter(_controller))),
+      body: Container(margin: EdgeInsets.all(10), child: Container(child: Painter(_controller))),
     );
   }
 
-  _show(PictureDetails picture, BuildContext context)  {
-
-    if(widget.index == -1){
+  _show(PictureDetails picture, BuildContext context) {
+    if (widget.index == -1) {
       temp.isImageAdded = true;
-      for(int i = 0; i<temp.noteEditor.noteContents.length; i++){
-        try{
+      for (int i = 0; i < temp.noteEditor.noteContents.length; i++) {
+        try {
           temp.noteEditor.noteContents[i].aut = false;
-        }
-        catch(e){
+        } catch (e) {
           continue;
         }
       }
       print("paint");
-
-
-      temp.noteEditor.addNewPaint(Container(
-          alignment: Alignment.center,
-          child: new FutureBuilder<Uint8List>(
-            future: picture.toPNG(),
-            builder:
-                (BuildContext context, AsyncSnapshot<Uint8List> snapshot) {
-              switch (snapshot.connectionState) {
-                case ConnectionState.done:
-                  if (snapshot.hasError) {
-                    return new Text('Error: ${snapshot.error}');
-                  } else {
-                    return Column(
-                      children: [
-                        Image.memory(snapshot.data!),
-                        Container(
-                          alignment: Alignment.bottomLeft,
-                          child: Row(
-                            children: [
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(Icons.delete),
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    );
-                  }
-                default:
-                  return new Container(
-                      child: new FractionallySizedBox(
-                        widthFactor: 0.1,
-                        child: new AspectRatio(
-                            aspectRatio: 1.0,
-                            child: new CircularProgressIndicator()),
-                        alignment: Alignment.center,
-                      ));
-              }
-            },
-          )));
+      var currentPaint = new ImageView(
+        self: widget.self,
+        outerIndex: widget.index!.toInt(),
+        innerIndex: temp.noteEditor.noteContents.length,
+        picture: picture,
+      );
+      temp.noteEditor.paintIndexes.add(temp.noteEditor.noteContents.length);
+      temp.noteEditor.addNewPaint(currentPaint);
       temp.noteEditor.addNewContentTextField();
-      Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => temp.noteEditor.notes()),
-              (Route<dynamic> route) => false);
-    }
-    else{
+      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => temp.noteEditor.notes()), (Route<dynamic> route) => false);
+    } else {
       widget.self!.notes[widget.index!.toInt()].isImageAdded = true;
       widget.self!.notes[widget.index!.toInt()].updater();
-      for(int i = 0; i< widget.self!.notes[widget.index!.toInt()].noteEditor.noteContents.length; i++){
-        try{
+      for (int i = 0; i < widget.self!.notes[widget.index!.toInt()].noteEditor.noteContents.length; i++) {
+        try {
           widget.self!.notes[widget.index!.toInt()].noteEditor.noteContents[i].aut = false;
-        }
-        catch(e){
-
+        } catch (e) {
           continue;
         }
       }
-
-      widget.self!.notes[widget.index!.toInt()].noteEditor.addNewPaint(Container(
-          alignment: Alignment.center,
-          child: new FutureBuilder<Uint8List>(
-            future: picture.toPNG(),
-            builder:
-                (BuildContext context, AsyncSnapshot<Uint8List> snapshot) {
-              switch (snapshot.connectionState) {
-                case ConnectionState.done:
-                  if (snapshot.hasError) {
-                    return new Text('Error: ${snapshot.error}');
-                  } else {
-                    return Column(
-                      children: [
-                        Image.memory(snapshot.data!,filterQuality: FilterQuality.high,),
-                        Container(
-                          alignment: Alignment.bottomLeft,
-                          child: Row(
-                            children: [
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(Icons.delete),
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    );
-                  }
-                default:
-                  return new Container(
-                      child: new FractionallySizedBox(
-                        widthFactor: 0.1,
-                        child: new AspectRatio(
-                            aspectRatio: 1.0,
-                            child: new CircularProgressIndicator()),
-                        alignment: Alignment.center,
-                      ));
-              }
-            },
-          )));
-      print("paint");
-      print(wisdom!.allFolders[wisdom!.returnIndexOfFolder(widget.self!.folderName)].notes.length);
+      var currentPaint = new ImageView(
+        self: widget.self,
+        outerIndex: widget.index!.toInt(),
+        innerIndex: widget.self!.notes[widget.index!.toInt()].noteEditor.noteContents.length,
+        picture: picture,
+      );
+      widget.self!.notes[widget.index!.toInt()].noteEditor.addNewPaint(currentPaint);
       widget.self!.notes[widget.index!.toInt()].noteEditor.addNewContentTextField();
-      Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => widget.self!.notes[widget.index!.toInt()].noteEditor.notes()),
-              (Route<dynamic> route) => false);
+      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => widget.self!.notes[widget.index!.toInt()].noteEditor.notes()), (Route<dynamic> route) => false);
     }
-
   }
 }
 
-class DrawBar extends StatelessWidget {
+class DrawBar extends StatefulWidget {
   final PainterController _controller;
 
   DrawBar(this._controller);
 
   @override
+  State<DrawBar> createState() => _DrawBarState();
+}
+
+class _DrawBarState extends State<DrawBar> {
+  @override
   Widget build(BuildContext context) {
+    Widget circleSelect(double r) {
+      return InkWell(
+        onTap: () {
+          setState(() {
+            widget._controller.thickness = r;
+          });
+        },
+        child: Container(
+          margin: EdgeInsets.all(10),
+          child: CircleAvatar(
+            maxRadius: r + 3,
+            backgroundColor: dark3,
+            child: CircleAvatar(
+              maxRadius: r,
+              backgroundColor: Colors.black,
+            ),
+          ),
+        ),
+      );
+    }
+
     return new Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        new Flexible(child: new StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-          return new Container(
-              child: new Slider(
-            value: _controller.thickness,
-            onChanged: (double value) => setState(() {
-              _controller.thickness = value;
-            }),
-            min: 1.0,
-            max: 5.0,
-            activeColor: dark3.withOpacity(0.6),
-          ));
+        new Flexible(child: new StatefulBuilder(builder: (BuildContext context, StateSetter setState) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [circleSelect(5), circleSelect(6), circleSelect(7), circleSelect(8), circleSelect(9), circleSelect(10)],
+          );
         })),
-        new StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
+        new StatefulBuilder(builder: (BuildContext context, StateSetter setState) {
           return new RotatedBox(
-              quarterTurns: _controller.eraseMode ? 2 : 0,
+              quarterTurns: widget._controller.eraseMode ? 2 : 0,
               child: IconButton(
-                  icon: new Icon(Icons.create),
-                  tooltip: (_controller.eraseMode ? 'Disable' : 'Enable') +
-                      ' eraser',
+                  icon: new Icon(
+                    Icons.create,
+                  ),
+                  tooltip: (widget._controller.eraseMode ? 'Disable' : 'Enable') + ' eraser',
                   onPressed: () {
                     setState(() {
-                      _controller.eraseMode = !_controller.eraseMode;
+                      widget._controller.eraseMode = !widget._controller.eraseMode;
                     });
                   }));
         }),
-        new ColorPickerButton(_controller, false),
+        new ColorPickerButton(widget._controller, false),
       ],
     );
   }
@@ -286,12 +212,7 @@ class ColorPickerButton extends StatefulWidget {
 class _ColorPickerButtonState extends State<ColorPickerButton> {
   @override
   Widget build(BuildContext context) {
-    return new IconButton(
-        icon: new Icon(_iconData, color: _color),
-        tooltip: widget._background
-            ? 'Change background color'
-            : 'Change draw color',
-        onPressed: _pickColor);
+    return new IconButton(icon: new Icon(_iconData, color: _color), tooltip: widget._background ? 'Change background color' : 'Change draw color', onPressed: _pickColor);
   }
 
   void _pickColor() {
@@ -300,7 +221,7 @@ class _ColorPickerButtonState extends State<ColorPickerButton> {
         .push(new MaterialPageRoute(
             fullscreenDialog: true,
             builder: (BuildContext context) {
-              return new Scaffold(
+              return Scaffold(
                   backgroundColor: light,
                   appBar: AppBar(
                     iconTheme: IconThemeData(
@@ -308,19 +229,32 @@ class _ColorPickerButtonState extends State<ColorPickerButton> {
                     ),
                     backgroundColor: light,
                     elevation: 0,
+                    centerTitle: true,
                     title: Text(
                       'Pick color',
                       style: poppins(foreground, h2, FontWeight.w500),
                     ),
                   ),
                   body: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      new Container(
+                      Container(
+                        margin: EdgeInsets.all(10),
+                        child: Text(
+                          'Choose the color you want to use in your note for your pencil.',
+                          style: poppins(foreground, h3, FontWeight.normal),
+                        ),
+                      ),
+                      Container(
+                          margin: EdgeInsets.all(10),
+                          decoration: BoxDecoration(border: Border.all(color: dark1, width: 2)),
                           alignment: Alignment.center,
-                          child: new ColorPicker(
-                            pickerColor: pickerColor,
-                            onColorChanged: (Color c) => pickerColor = c,
+                          child: Container(
+                            margin: EdgeInsets.only(top: 50, left: 10, right: 10, bottom: 30),
+                            child: new ColorPicker(
+                              pickerColor: pickerColor,
+                              onColorChanged: (Color c) => pickerColor = c,
+                            ),
                           )),
                     ],
                   ));
@@ -332,12 +266,9 @@ class _ColorPickerButtonState extends State<ColorPickerButton> {
     });
   }
 
-  Color get _color => widget._background
-      ? widget._controller.backgroundColor
-      : widget._controller.drawColor;
+  Color get _color => widget._background ? widget._controller.backgroundColor : widget._controller.drawColor;
 
-  IconData get _iconData =>
-      widget._background ? Icons.format_color_fill : Icons.brush;
+  IconData get _iconData => widget._background ? Icons.format_color_fill : Icons.circle;
 
   set _color(Color color) {
     if (widget._background) {

@@ -17,6 +17,7 @@
  */
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:blinking_text/blinking_text.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -25,13 +26,16 @@ import 'package:flutter_app/Designs/Colors.dart';
 import 'package:flutter_app/Designs/Fonts.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_sound_platform_interface/flutter_sound_recorder_platform_interface.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 typedef _Fn = void Function();
 const theSource = AudioSource.microphone;
 
 class Audio extends StatefulWidget {
-  const Audio({Key? key}) : super(key: key);
+  var filename;
+  var self;
+  Audio({this.filename,this.self, Key? key}) : super(key: key);
   String widgetType() {
     return "Audio";
   }
@@ -40,43 +44,22 @@ class Audio extends StatefulWidget {
     return "";
   }
 
+  String getFileName() {
+    return filename;
+  }
+
   @override
   _AudioState createState() => _AudioState();
 }
 
 class _AudioState extends State<Audio> with SingleTickerProviderStateMixin {
-  Codec _codec = Codec.aacMP4;
-  String _mPath = 'tau_file.mp4';
-  FlutterSoundPlayer? _mPlayer = FlutterSoundPlayer();
-  FlutterSoundRecorder? _mRecorder = FlutterSoundRecorder();
-  bool _mPlayerIsInited = false;
-  bool _mRecorderIsInited = false;
-  bool _mplaybackReady = false;
-  AnimationController? animationController;
-  @override
-  void initState() {
-    _mPlayer!.openAudioSession().then((value) {
-      setState(() {
-        _mPlayerIsInited = true;
-      });
-    });
-
-    openTheRecorder().then((value) {
-      setState(() {
-        _mRecorderIsInited = true;
-      });
-    });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _mRecorder!.closeAudioSession();
-    _mPlayer!.closeAudioSession();
-    _mPlayer = null;
-    _mRecorder = null;
-    super.dispose();
-  }
+  Codec codec = Codec.aacMP4;
+  String audiopath = '';
+  FlutterSoundPlayer? player = FlutterSoundPlayer();
+  FlutterSoundRecorder? recorder = FlutterSoundRecorder();
+  bool playerIsInited = false;
+  bool recorderIsInited = false;
+  bool playbackReady = false;
 
   Future<void> openTheRecorder() async {
     if (!kIsWeb) {
@@ -86,30 +69,19 @@ class _AudioState extends State<Audio> with SingleTickerProviderStateMixin {
         throw RecordingPermissionException('Microphone permission not granted');
       }
     }
-    await _mRecorder!.openAudioSession();
-    if (!await _mRecorder!.isEncoderSupported(_codec) && kIsWeb) {
-      _codec = Codec.opusWebM;
-      _mPath = 'tau_file.webm';
-      if (!await _mRecorder!.isEncoderSupported(_codec) && kIsWeb) {
-        _mRecorderIsInited = true;
-        return;
-      }
-    }
-    _mRecorderIsInited = true;
+
+    await recorder!.openAudioSession();
+    recorderIsInited = true;
   }
 
   // ----------------------  Here is the code for recording and playback -------
   bool isRecording = false;
   void record() {
-    animationController = AnimationController(
-      duration: Duration(seconds: 1),
-      vsync: this,
-    );
     isRecording = true;
-    _mRecorder!
+    recorder!
         .startRecorder(
-      toFile: _mPath,
-      codec: _codec,
+      toFile: audiopath,
+      codec: codec,
       audioSource: theSource,
     )
         .then((value) {
@@ -118,19 +90,20 @@ class _AudioState extends State<Audio> with SingleTickerProviderStateMixin {
   }
 
   void stopRecorder() async {
-    await _mRecorder!.stopRecorder().then((value) {
+    await recorder!.stopRecorder().then((value) {
       setState(() {
         //var url = value;
-        _mplaybackReady = true;
+        playbackReady = true;
       });
+
     });
   }
 
   void play() {
-    assert(_mPlayerIsInited && _mplaybackReady && _mRecorder!.isStopped && _mPlayer!.isStopped);
-    _mPlayer!
+    assert(playerIsInited && playbackReady && recorder!.isStopped && player!.isStopped);
+    player!
         .startPlayer(
-            fromURI: _mPath,
+            fromURI: audiopath,
             //codec: kIsWeb ? Codec.opusWebM : Codec.aacADTS,
             whenFinished: () {
               setState(() {});
@@ -141,25 +114,66 @@ class _AudioState extends State<Audio> with SingleTickerProviderStateMixin {
   }
 
   void stopPlayer() {
-    _mPlayer!.stopPlayer().then((value) {
+    player!.stopPlayer().then((value) {
       setState(() {});
     });
   }
 
-// ----------------------------- UI --------------------------------------------
-
   _Fn? getRecorderFn() {
-    if (!_mRecorderIsInited || !_mPlayer!.isStopped) {
+    if (!recorderIsInited || !player!.isStopped) {
       return null;
     }
-    return _mRecorder!.isStopped ? record : stopRecorder;
+    return recorder!.isStopped ? record : stopRecorder;
   }
 
   _Fn? getPlaybackFn() {
-    if (!_mPlayerIsInited || !_mplaybackReady || !_mRecorder!.isStopped) {
+    if (!playerIsInited || !playbackReady || !recorder!.isStopped) {
       return null;
     }
-    return _mPlayer!.isStopped ? play : stopPlayer;
+    return player!.isStopped ? play : stopPlayer;
+  }
+
+  admin() async {
+    Directory path = await getApplicationDocumentsDirectory();
+    var file = path.path + "/audio/${widget.filename}.mp3";
+    if (await Directory(file).exists() || await File(file).exists()) {
+      setState(() {
+        playbackReady = true;
+        audiopath = file;
+      });
+      openTheRecorder().then((value) {
+        setState(() {
+          recorderIsInited = true;
+        });
+      });
+    } else {
+      widget.filename = DateTime.now().millisecondsSinceEpoch;
+      audiopath = path.path.toString() + "/audio/${widget.filename}.mp3";
+      openTheRecorder().then((value) {
+        setState(() {
+          recorderIsInited = true;
+        });
+      });
+      player!.openAudioSession().then((value) {
+        setState(() {
+          playerIsInited = true;
+        });
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    recorder!.closeAudioSession();
+    player!.closeAudioSession();
+    player = null;
+    recorder = null;
+    super.dispose();
   }
 
   @override
@@ -173,7 +187,7 @@ class _AudioState extends State<Audio> with SingleTickerProviderStateMixin {
       margin: EdgeInsets.only(left: 10, right: 10),
       child: AnimatedSwitcher(
         duration: Duration(milliseconds: 600),
-        child: _mplaybackReady == true
+        child: playbackReady == true
             ? Row(
                 key: UniqueKey(),
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -210,7 +224,7 @@ class _AudioState extends State<Audio> with SingleTickerProviderStateMixin {
                           child: Center(
                             child: Icon(
                               Icons.pause,
-                              size: 20,
+                              size: 40,
                               color: foreground.withOpacity(0.5),
                             ),
                           ),
@@ -275,17 +289,3 @@ class _AudioState extends State<Audio> with SingleTickerProviderStateMixin {
   }
 }
 
-class RecordingAnimation extends StatelessWidget {
-  const RecordingAnimation({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0.0, end: 1.0),
-        curve: Curves.ease,
-        duration: const Duration(seconds: 1),
-        builder: (BuildContext context, double opacity, Widget? child) {
-          return Opacity(opacity: opacity, child: Container(width: 20, height: 20, color: Colors.red));
-        });
-  }
-}

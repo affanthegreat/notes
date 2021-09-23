@@ -16,8 +16,8 @@ class NoteEditor extends StatefulWidget {
   int? index;
   late FolderSupport? self;
   late Color? notecolor;
-
-  NoteEditor({this.self, this.index, this.content, this.notecolor, Key? key}) : super(key: key);
+  var audioFiles;
+  NoteEditor({this.self, this.index, this.content, this.notecolor, this.audioFiles, Key? key}) : super(key: key);
 
   @override
   _NoteEditorState createState() => _NoteEditorState(this.notecolor);
@@ -192,10 +192,10 @@ class _NoteEditorState extends State<NoteEditor> {
             IconButton(
               onPressed: () {
                 if (widget.index == -1) {
+                  var filename = DateTime.now().millisecondsSinceEpoch;
                   setState(() {
-                    temp.noteEditor.addNewAudio();
+                    temp.noteEditor.addNewAudio(se);
                   });
-
                   print(temp.noteEditor.noteContents.length);
                 } else {
                   setState(() {

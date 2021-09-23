@@ -17,10 +17,10 @@ class NoteEditorModal {
   int internalIndex = 0;
   var notecolor = light;
   late var paintIndexes = [];
+  var audioFiles = {};
 
   NoteEditorModal(int index) {
-    addNewTitle(internalIndex);
-    internalIndex += 1;
+    addNewTitle();
     addNewContentTextField();
     this.index = index;
     noteEditor = new NoteEditor(
@@ -43,7 +43,7 @@ class NoteEditorModal {
     addNewContentTextField();
   }
 
-  addNewTitle(int internalIndex) {
+  addNewTitle() {
     noteContents.add(new TitleTextField(true, ""));
   }
 
@@ -53,6 +53,7 @@ class NoteEditorModal {
       content: noteContents,
       self: wisdom!.returnFolderByName(folderNameHolder),
       notecolor: notecolor,
+      audioFiles: audioFiles,
     );
     return noteEditor;
   }

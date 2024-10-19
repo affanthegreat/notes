@@ -1,5 +1,5 @@
-# GoodNotes
-Notes app with fancy stuff
+# Paper Notes
+Notes app with fancy stuff like encryption, password protection, Audio logs, drawings and other.
 
 ## Getting Started
 

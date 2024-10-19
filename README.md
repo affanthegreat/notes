@@ -1,5 +1,4 @@
-# flutter_app
-
+# GoodNotes
 Notes app with fancy stuff
 
 ## Getting Started
